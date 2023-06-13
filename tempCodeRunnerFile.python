@@ -1,0 +1,52 @@
+import os
+import cv2
+import mediapipe as mp
+import numpy as np
+import json
+
+# Create a function to extract pose from video and save it to a JSON file
+
+
+def transformVideo(input_filename, output_filename):
+    # Initialize mediapipe pose solution
+    mp_pose = mp.solutions.pose
+    pose = mp_pose.Pose()
+
+    # Load the pose landmarks from the JSON file
+    with open(input_filename, 'rb') as f:
+        pose_landmarks_list = json.loads(f.read().decode(errors='ignore'))
+
+    # Create a VideoWriter object to write the output video
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (720, 720))
+
+    # Loop through the pose landmarks and create a new video frame for each set of landmarks
+    for pose_landmarks in pose_landmarks_list:
+        # Create a blank image to draw the pose landmarks on
+        img = np.zeros((720, 720, 3), np.uint8)
+
+        # Draw the pose landmarks on the image
+        mp_drawing = mp.solutions.drawing_utils
+        mp_drawing.draw_landmarks(img, mp_pose.PoseLandmark, pose_landmarks, mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2), mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2, circle_radius=2))
+
+        # Write the image to the output video
+        out.write(img)
+
+    # Release the VideoWriter object
+    out.release()
+
+
+# Call the function to extract pose from video and save it to a JSON file
+input_folder = "Dataset/processedDataset/"
+output_folder = "Dataset/outputDataset/"
+
+# Create the output folder if it doesn't exist
+os.makedirs(output_folder, exist_ok=True)
+
+# Load all files from the processedDataset folder and call transformVideo function
+for filename in os.listdir(input_folder):
+    input_file = os.path.join(input_folder, filename)
+    output_file = os.path.join(output_folder, filename.split(".")[0] + ".avi")
+    print('Processing', input_file)
+    transformVideo(input_file, output_file)
+    print('Done processing', input_file)
